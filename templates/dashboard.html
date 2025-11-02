@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Welcome Section -->
+    <div class="welcome-section">
+        <h1 class="welcome-title">Admin Dashboard</h1>
+        <p class="welcome-subtitle">Manage your seating, users, and printing operations</p>
+    </div>
+
+
+    <div style="background: rgb(165, 165, 164); color: black; padding: 10px; font-weight: bold; margin: 10px; border-radius: 8px;">
+    Email: <strong>{{ request.user.email }}</strong>
+</div>
+
+    <!-- Action Cards -->
+    <div class="action-grid">
+    <!-- Manage Seats -->
+    {% if 'view' in permissions.seats %}
+    <a href="{% url 'seats:manage_seat' %}" class="action-card card-manage">
+        <div class="card-icon-wrapper">
+            <i class="fas fa-keyboard card-icon"></i>
+        </div>
+        <h2 class="card-title">Manage Seats</h2>
+        <p class="card-description">Configure seat codes, assign attendees, and organize seating arrangements</p>
+        <div class="card-action">
+            <span>Manage Now</span>
+            <i class="fas fa-arrow-right"></i>
+        </div>
+    </a>
+    {% endif %}
+
+    <!-- Print Badges -->
+    {% if 'view' in permissions.badges %}
+    <a href="{% url 'seats:print_badge' %}" class="action-card card-print">
+        <div class="card-icon-wrapper">
+            <i class="fas fa-print card-icon"></i>
+        </div>
+        <h2 class="card-title">Print Badges</h2>
+        <p class="card-description">Search attendees and print professional seat badges instantly</p>
+        <div class="card-action">
+            <span>Print Now</span>
+            <i class="fas fa-arrow-right"></i>
+        </div>
+    </a>
+    {% endif %}
+
+    <!-- User Management -->
+    {% if 'view' in permissions.users %}
+    <a href="{% url 'seats:user_management' %}" class="action-card card-users">
+        <div class="card-icon-wrapper">
+            <i class="fas fa-users card-icon"></i>
+        </div>
+        <h2 class="card-title">User Management</h2>
+        <p class="card-description">Create, edit, and manage user accounts with role-based permissions</p>
+        <div class="card-action">
+            <span>Manage Users</span>
+            <i class="fas fa-arrow-right"></i>
+        </div>
+        <div class="module-badge new">NEW</div>
+    </a>
+    {% endif %}
+
+    <!-- Badge Alignment -->
+    {% if 'view' in permissions.alignment %}
+    <a href="{% url 'seats:badge_alignment' %}" class="action-card card-align">
+        <div class="card-icon-wrapper">
+            <i class="fas fa-ruler-combined card-icon"></i>
+        </div>
+        <h2 class="card-title">Badge Alignment</h2>
+        <p class="card-description">Customize badge layouts, text alignment, and print formatting options</p>
+        <div class="card-action">
+            <span>Configure</span>
+            <i class="fas fa-arrow-right"></i>
+        </div>
+        <div class="module-badge new">NEW</div>
+    </a>
+    {% endif %}
+</div>
+    <!-- ← NOW closes .action-grid correctly -->
+
+    <!-- Stats Section -->
+    <!-- <div class="stats-section">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_seats|default:"250" }}</div>
+            <div class="stat-label">Total Seats</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ assigned_seats|default:"187" }}</div>
+            <div class="stat-label">Assigned</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ printed_badges|default:"142" }}</div>
+            <div class="stat-label">Badges Printed</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ available_seats|default:"63" }}</div>
+            <div class="stat-label">Available</div>
+        </div>
+    </div> -->
+</div>
+{% endblock %}

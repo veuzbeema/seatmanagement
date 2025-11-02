@@ -1,0 +1,43 @@
+{% load humanize %}
+{% for seat in object_list %}
+<tr data-seat-id="{{ seat.id }}">
+    <td>{{ seat.seat_no }}</td>
+    <td>{{ seat.name }}</td>
+    <td>{{ seat.email }}</td>
+    <td>{{ seat.company|default:"" }}</td>
+    <td>{{ seat.phone|default:"" }}</td>
+    <td>{{ seat.get_gender_display }}</td>
+    <td>
+    <span class="badge bg-{% if seat.print_status == 'printed' %}success{% else %}secondary{% endif %}">
+        {{ seat.get_print_status_display }}
+    </span>
+    </td>
+    <td>
+        <button class="btn btn-sm btn-outline-primary edit-seat-btn"
+                data-id="{{ seat.id }}"
+                title="Edit">
+            <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger delete-seat-btn"
+                data-id="{{ seat.id }}"
+                title="Delete">
+            <i class="fas fa-trash"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-success print-seat-btn"
+                data-id="{{ seat.id }}"
+                title="Print">
+            <i class="fas fa-print"></i>
+        </button>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="8" class="text-center text-muted py-4">
+        {% if query %}
+            No seats found matching "{{ query }}".
+        {% else %}
+            No seats available.
+        {% endif %}
+    </td>
+</tr>
+{% endfor %}

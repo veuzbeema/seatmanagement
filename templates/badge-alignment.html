@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seat Number Alignment - Seating System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        :root {
+            --primary: #6366f1;
+            --text: #1f2937;
+            --text-secondary: #6b7280;
+            --border: #e5e7eb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #dcdcdc 0%, #000000 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            padding: 16px 32px;
+            position: relative;
+            z-index: 100;
+        }
+
+        .navbar-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo img {
+            height: 40px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            width: 100%;
+            display: flex;
+            gap: 32px;
+        }
+
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .module-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 0;
+            text-shadow: 2px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-designer {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .badge-preview-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .badge-preview {
+            background: white;
+            border-radius: 16px;
+            padding: 0;
+            margin: 0 auto;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            position: relative;
+            min-height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #seatField {
+            position: absolute;
+            cursor: move;
+            background: #f9fafb;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 10px 16px;
+            user-select: none;
+            top: 20px;
+            left: 20px;
+        }
+
+        #seatField:hover {
+            border-color: var(--primary);
+        }
+
+        .controls-panel {
+            width: 320px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-header {
+            padding: 20px 24px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        .panel-body {
+            padding: 24px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 12px;
+        }
+
+        .btn-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: #f0f0f0;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            margin-right: 8px;
+        }
+
+        .btn-toggle.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .align-group, .position-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 8px 0;
+        }
+
+        .size-option {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            margin-bottom: 8px;
+        }
+
+        .size-option.active {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .custom-size {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .custom-size input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .position-inputs {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .position-inputs input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        /* Hidden print container */
+        #printContainer {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            width: 105mm;
+            height: 148mm;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #printSeat {
+            position: absolute;
+            padding: 10px 16px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printContainer, #printContainer * {
+                visibility: visible;
+            }
+            #printContainer {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 105mm;
+                height: 148mm;
+                margin: 0;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-container {
+                flex-direction: column;
+            }
+            .controls-panel {
+                width: 100%;
+            }
+        }
+
+
+
+        .badge-preview, #printContainer { border: 1px dashed #ccc; position: relative; background: white; }
+        #seatField { position: absolute; cursor: move; user-select: none; }
+        .field-value { white-space: nowrap; }
+        @media print {
+            body > *:not(#printContainer) { display: none !important; }
+            #printContainer, #printSeat { display: block !important; position: static; }
+        }
+        .btn-toggle { cursor: pointer; }
+        .btn-toggle.active { background: #0d6efd; color: white; }
+        .custom-size { display: none; margin-top: 0.5rem; }
+        .custom-size.show { display: flex; gap: 0.5rem; }
+
+
+    </style>
+</head>
+<body>
+    
+
+    <form style="display: none;" id="csrf-form">
+        {% csrf_token %}
+    </form>
+    <!-- Hidden print container -->
+    <div id="printContainer" style="display:none;">
+        <div id="printSeat" style="position:absolute;"></div>
+    </div>
+
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="logo">
+                <img src="https://www.eventxpro.com/images/logos/logo.png" alt="EventXPro">
+            </div>
+            <div class="user-badge">
+                <i class="fas fa-user-shield"></i>
+                <span>Admin</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="dashboard-container">
+            <div class="badge-designer">
+                <div class="module-header">
+                    <h1 class="module-title">Seat Number Alignment</h1>
+                    <div class="btn-actions">
+                        <button class="btn btn-primary" id="resetBtn"
+                          {% if 'reset' not in permissions %}
+                            disabled
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="You do not have permission to create seats"
+                        {% endif %}
+                        >
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                        <button class="btn btn-success" id="printBtn"
+                          {% if 'view' not in permissions %}
+                            disabled
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="You do not have permission to create seats"
+                        {% endif %}
+                        >
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                        <button class="btn btn-warning" id="saveBtn"
+                          {% if 'edit' not in permissions %}
+                                disabled
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                title="You do not have permission to create seats"
+                            {% endif %}
+                        >
+                            <i class="fas fa-save"></i> Save Template
+                        </button>
+                    </div>
+                </div>
+
+                <div class="badge-preview-container">
+                    <div class="preview-header">
+                        <h2 class="preview-title">Badge Preview</h2>
+                        <div class="badge-size">A6 (105 × 148 mm)</div>
+                    </div>
+                    <div class="badge-preview" id="badgePreview">
+                        <div id="seatField">
+                            <div class="field-label">Seat Number</div>
+                            <div class="field-value" id="seatValue">#A12</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-panel">
+                <div class="panel-header">
+                    <h3>Seat Styling & Position</h3>
+                </div>
+                <div class="panel-body"
+                >
+                    <div class="panel-section">
+                        <h4 class="section-title">Position (in pixels)</h4>
+                        <div class="position-group">
+                            <div class="btn-toggle" data-pos="20,20" title="Top Left">TL</div>
+                            <div class="btn-toggle" data-pos="50,20" title="Top Center">TC</div>
+                            <div class="btn-toggle" data-pos="180,20" title="Top Right">TR</div>
+                            <div class="btn-toggle" data-pos="20,100" title="Middle Left">ML</div>
+                            <div class="btn-toggle active" data-pos="50,100" title="Center">C</div>
+                            <div class="btn-toggle" data-pos="180,100" title="Middle Right">MR</div>
+                            <div class="btn-toggle" data-pos="20,180" title="Bottom Left">BL</div>
+                            <div class="btn-toggle" data-pos="50,180" title="Bottom Center">BC</div>
+                            <div class="btn-toggle" data-pos="180,180" title="Bottom Right">BR</div>
+                        </div>
+
+                        <div class="position-inputs">
+                            <input type="number" id="offsetX" placeholder="X (px)" value="20" min="0">
+                            <input type="number" id="offsetY" placeholder="Y (px)" value="20" min="0">
+                            <button class="btn btn-sm" id="applyPos" style="padding: 6px 10px; font-size: 0.85rem;">Apply</button>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h4 class="section-title">Text Alignment</h4>
+                        <div class="align-group">
+                            <div class="btn-toggle active" data-align="left" title="Left">
+                                <i class="fas fa-align-left"></i>
+                            </div>
+                            <div class="btn-toggle" data-align="center" title="Center">
+                                <i class="fas fa-align-center"></i>
+                            </div>
+                            <div class="btn-toggle" data-align="right" title="Right">
+                                <i class="fas fa-align-right"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h4 class="section-title">Font Size (<span id="fontSizeLabel">24</span>px)</h4>
+                        <input type="range" id="fontSizeSlider" min="12" max="60" value="24">
+                    </div>
+
+                    <div class="panel-section">
+                        <h4 class="section-title">Bold</h4>
+                        <div class="btn-toggle" id="boldToggle" title="Toggle Bold">
+                            <i class="fas fa-bold"></i>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h4 class="section-title">Page Size</h4>
+                        <div class="size-option active" data-size="A6" data-w="105" data-h="148">
+                            A6 (105 × 148 mm)
+                        </div>
+                        <div class="size-option" data-size="A5" data-w="148" data-h="210">
+                            A5 (148 × 210 mm)
+                        </div>
+                        <div class="size-option" data-size="A4" data-w="210" data-h="297">
+                            A4 (210 × 297 mm)
+                        </div>
+                        <div class="size-option" data-size="custom">
+                            Custom
+                        </div>
+                        <div class="custom-size">
+                            <input type="number" id="customWidth" placeholder="Width (mm)" min="50" max="300" value="105">
+                            <input type="number" id="customHeight" placeholder="Height (mm)" min="50" max="400" value="148">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const badgePreview = document.getElementById('badgePreview');
+            const seatField = document.getElementById('seatField');
+            const seatValue = document.getElementById('seatValue');
+            const printSeat = document.getElementById('printSeat');
+            const printContainer = document.getElementById('printContainer');
+            const fontSizeSlider = document.getElementById('fontSizeSlider');
+            const fontSizeLabel = document.getElementById('fontSizeLabel');
+            const boldToggle = document.getElementById('boldToggle');
+            const alignButtons = document.querySelectorAll('.btn-toggle[data-align]');
+            const posButtons = document.querySelectorAll('.btn-toggle[data-pos]');
+            const sizeOptions = document.querySelectorAll('.size-option');
+            const offsetX = document.getElementById('offsetX');
+            const offsetY = document.getElementById('offsetY');
+            const applyPosBtn = document.getElementById('applyPos');
+            const printBtn = document.getElementById('printBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const badgeSizeEl = document.querySelector('.badge-size');
+
+            // State variables
+            let currentPageWidth = 105;
+            let currentPageHeight = 148;
+
+            // Load saved template
+            function loadTemplate() {
+                fetch("{% url 'seats:get_badge_template' %}")
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            const t = data.template;
+                            seatField.style.left = t.position_x + 'px';
+                            seatField.style.top = t.position_y + 'px';
+                            offsetX.value = t.position_x;
+                            offsetY.value = t.position_y;
+
+                            seatValue.style.fontSize = t.font_size + 'px';
+                            fontSizeSlider.value = t.font_size;
+                            fontSizeLabel.textContent = t.font_size;
+
+                            seatValue.style.fontWeight = t.is_bold ? 'bold' : 'normal';
+                            boldToggle.classList.toggle('active', t.is_bold);
+
+                            seatValue.style.textAlign = t.text_align;
+                            alignButtons.forEach(b => b.classList.toggle('active', b.dataset.align === t.text_align));
+
+                            currentPageWidth = t.page_width_mm;
+                            currentPageHeight = t.page_height_mm;
+                            updatePageSize();
+                        }
+                    });
+            }
+            loadTemplate();
+
+            // Initialize position
+            seatField.style.left = '20px';
+            seatField.style.top = '20px';
+
+            // DRAGGING
+            let isDragging = false;
+            let dragOffsetX, dragOffsetY;
+
+            seatField.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                const rect = seatField.getBoundingClientRect();
+                dragOffsetX = e.clientX - rect.left;
+                dragOffsetY = e.clientY - rect.top;
+                seatField.style.cursor = 'grabbing';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const badgeRect = badgePreview.getBoundingClientRect();
+                const x = e.clientX - badgeRect.left - dragOffsetX;
+                const y = e.clientY - badgeRect.top - dragOffsetY;
+
+                const maxX = badgeRect.width - seatField.offsetWidth;
+                const maxY = badgeRect.height - seatField.offsetHeight;
+                const finalX = Math.max(0, Math.min(x, maxX));
+                const finalY = Math.max(0, Math.min(y, maxY));
+
+                seatField.style.left = Math.round(finalX) + 'px';
+                seatField.style.top = Math.round(finalY) + 'px';
+                offsetX.value = Math.round(finalX);
+                offsetY.value = Math.round(finalY);
+                posButtons.forEach(btn => btn.classList.remove('active'));
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    seatField.style.cursor = 'move';
+                }
+            });
+
+            // Apply manual position
+            applyPosBtn.addEventListener('click', () => {
+                let x = parseInt(offsetX.value) || 0;
+                let y = parseInt(offsetY.value) || 0;
+                const badgeRect = badgePreview.getBoundingClientRect();
+                x = Math.max(0, Math.min(x, badgeRect.width - seatField.offsetWidth));
+                y = Math.max(0, Math.min(y, badgeRect.height - seatField.offsetHeight));
+                seatField.style.left = x + 'px';
+                seatField.style.top = y + 'px';
+                offsetX.value = x;
+                offsetY.value = y;
+                posButtons.forEach(btn => btn.classList.remove('active'));
+            });
+
+            // Position presets
+            posButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    posButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const [x, y] = btn.dataset.pos.split(',').map(Number);
+                    seatField.style.left = x + 'px';
+                    seatField.style.top = y + 'px';
+                    offsetX.value = x;
+                    offsetY.value = y;
+                });
+            });
+
+            // Text alignment
+            alignButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    alignButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    seatValue.style.textAlign = btn.dataset.align;
+                });
+            });
+
+            // Font size
+            fontSizeSlider.addEventListener('input', () => {
+                const size = fontSizeSlider.value;
+                seatValue.style.fontSize = size + 'px';
+                fontSizeLabel.textContent = size;
+            });
+
+            // Bold toggle
+            boldToggle.addEventListener('click', () => {
+                boldToggle.classList.toggle('active');
+                seatValue.style.fontWeight = boldToggle.classList.contains('active') ? 'bold' : 'normal';
+            });
+
+            // Page size
+            sizeOptions.forEach(opt => {
+                opt.addEventListener('click', () => {
+                    sizeOptions.forEach(o => o.classList.remove('active'));
+                    opt.classList.add('active');
+
+                    if (opt.dataset.size === 'custom') {
+                        currentPageWidth = parseInt(document.getElementById('customWidth').value) || 105;
+                        currentPageHeight = parseInt(document.getElementById('customHeight').value) || 148;
+                        badgeSizeEl.textContent = `Custom (${currentPageWidth} × ${currentPageHeight} mm)`;
+                    } else {
+                        currentPageWidth = parseInt(opt.dataset.w);
+                        currentPageHeight = parseInt(opt.dataset.h);
+                        badgeSizeEl.textContent = `${opt.dataset.size.toUpperCase()} (${currentPageWidth} × ${currentPageHeight} mm)`;
+                    }
+
+                    badgePreview.style.width = currentPageWidth + 'mm';
+                    badgePreview.style.height = currentPageHeight + 'mm';
+                    printContainer.style.width = currentPageWidth + 'mm';
+                    printContainer.style.height = currentPageHeight + 'mm';
+                });
+            });
+
+            // PRINT FUNCTION
+            printBtn.addEventListener('click', () => {
+                // Clone current seat style to print container
+                printSeat.innerHTML = seatValue.innerHTML;
+                printSeat.style.fontSize = seatValue.style.fontSize;
+                printSeat.style.fontWeight = seatValue.style.fontWeight;
+                printSeat.style.textAlign = seatValue.style.textAlign;
+                printSeat.style.left = seatField.style.left;
+                printSeat.style.top = seatField.style.top;
+                printSeat.style.position = 'absolute';
+
+                // Trigger print
+                window.print();
+            });
+
+            // SAVE VIA AJAX
+           saveBtn.addEventListener('click', () => {
+                const data = {
+                    position_x: parseInt(seatField.style.left) || 0,
+                    position_y: parseInt(seatField.style.top) || 0,
+                    font_size: parseInt(fontSizeSlider.value),
+                    is_bold: boldToggle.classList.contains('active'),
+                    text_align: seatValue.style.textAlign || 'left',
+                    page_width_mm: currentPageWidth,
+                    page_height_mm: currentPageHeight
+                };
+
+                fetch("{% url 'seats:save_badge_template' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(r => {
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    return r.json();
+                })
+                .then(res => {
+                    alert(res.success ? 'Template saved!' : 'Error: ' + (res.error || ''));
+                })
+                .catch(error => {
+                    console.error('Save failed:', error);
+                    alert('Failed to save. Check console.');
+                });
+            });
+
+            // Reset
+            resetBtn.addEventListener('click', () => {
+                if (confirm('Reset to default layout?')) {
+                    seatField.style.left = '20px';
+                    seatField.style.top = '20px';
+                    offsetX.value = 20;
+                    offsetY.value = 20;
+                    posButtons.forEach(b => b.classList.remove('active'));
+                    document.querySelector('.btn-toggle[data-pos="20,20"]').classList.add('active');
+
+                    seatValue.style.textAlign = 'left';
+                    alignButtons.forEach(b => b.classList.remove('active'));
+                    document.querySelector('.btn-toggle[data-align="left"]').classList.add('active');
+
+                    seatValue.style.fontSize = '24px';
+                    seatValue.style.fontWeight = 'normal';
+                    fontSizeSlider.value = 24;
+                    fontSizeLabel.textContent = '24';
+                    boldToggle.classList.remove('active');
+
+                    sizeOptions.forEach(o => o.classList.remove('active'));
+                    document.querySelector('.size-option[data-size="A6"]').classList.add('active');
+                    currentPageWidth = 105;
+                    currentPageHeight = 148;
+                    badgePreview.style.width = '105mm';
+                    badgePreview.style.height = '148mm';
+                    printContainer.style.width = '105mm';
+                    printContainer.style.height = '148mm';
+                    badgeSizeEl.textContent = 'A6 (105 × 148 mm)';
+
+                    alert('Reset complete!');
+                }
+            });
+
+            // Helper: Get CSRF token (Django)
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+
+
+
+            // PRINT
+            printBtn.addEventListener('click', () => {
+                printSeat.innerHTML = seatValue.innerHTML;
+                printSeat.style.cssText = seatValue.style.cssText;
+                printSeat.style.left = seatField.style.left;
+                printSeat.style.top = seatField.style.top;
+                printSeat.style.position = 'absolute';
+                printContainer.style.width = currentPageWidth + 'mm';
+                printContainer.style.height = currentPageHeight + 'mm';
+                window.print();
+            });
+
+            // Custom size toggle
+            document.querySelector('[data-size="custom"]').addEventListener('click', () => {
+                customSizeInputs.classList.add('show');
+            });
+            sizeOptions.forEach(opt => {
+                if (opt.dataset.size !== 'custom') {
+                    opt.addEventListener('click', () => {
+                        customSizeInputs.classList.remove('show');
+                    });
+                }
+            });
+
+            function updatePageSize() {
+                badgePreview.style.width = currentPageWidth + 'mm';
+                badgePreview.style.height = currentPageHeight + 'mm';
+                badgeSizeEl.textContent = `Custom (${currentPageWidth} × ${currentPageHeight} mm)`;
+            }
+        });
+
+
+    </script>
+</body>
+</html>

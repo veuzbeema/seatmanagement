@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Seat Code - Seating Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        :root {
+            --primary: #006cbe;
+            --success: #107c10;
+            --warning: #d83b01;
+            --light-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #1e1e1e;
+        }
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .navbar-brand img {
+            height: 32px;
+        }
+        .section-title {
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: var(--text);
+        }
+        .card {
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+            border-radius: 10px;
+        }
+        .btn-sample {
+            background-color: #f3f2f1;
+            color: var(--primary);
+            border: 1px solid #c8c6c4;
+        }
+        .btn-sample:hover {
+            background-color: #e1dfdd;
+        }
+        .print-badge {
+            font-size: 0.85em;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+        .action-btn {
+            width: 34px;
+            height: 34px;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 2px;
+        }
+        .table th {
+            font-weight: 600;
+            color: #555;
+            white-space: nowrap;
+        }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+        .log-icon {
+            cursor: pointer;
+            color: #006cbe;
+            font-size: 0.9em;
+            margin-left: 6px;
+        }
+        .log-icon:hover {
+            text-decoration: underline;
+        }
+        .status-cell {
+            display: flex;
+            align-items: center;
+        }
+        .print-action-group {
+            display: flex;
+            gap: 4px;
+        }
+
+
+
+/* === HIDE EVERYTHING EXCEPT THE BADGE WHEN PRINTING === */
+@media print {
+    /* Hide page UI */
+    body > *:not(#printPreviewModal) { display: none !important; }
+
+    /* Show only modal + badge */
+    #printPreviewModal {
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: white !important;
+        padding: 30px !important;
+        box-sizing: border-box !important;
+    }
+
+    #printPreviewModal .modal-content {
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+    }
+
+    #printPreviewModal .modal-header,
+    #printPreviewModal .modal-footer {
+        display: none !important;
+    }
+
+    #printArea {
+        margin: 0 auto !important;
+        width: 350px !important;
+        page-break-after: avoid !important;
+    }
+
+    /* Remove any backdrop */
+    .modal-backdrop { display: none !important; }
+}
+
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="dashboard.html">
+                <img src="https://www.eventxpro.com/images/logos/logo.png" alt="Logo">
+            </a>
+            <div class="d-flex align-items-center">
+                <a href="{% url 'seats:dashboard' %}" class="btn btn-outline-secondary btn-sm">← Back to Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="section-title mb-0">Manage Seat Code</h2>
+           <button class="btn btn-success"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addSeatModal"
+                    {% if 'create' not in permissions %}
+                        disabled
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        title="You do not have permission to create seats"
+                    {% endif %}
+                    >
+                Add New Seat
+            </button>
+        </div>
+
+        <!-- Upload & Sample Section -->
+        <div class="card">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                   <div class="col-md-6">
+                <label class="form-label fw-medium">Download Sample Format</label>
+                <div>
+                    <a href="{% url 'seats:download_sample' %}" 
+                       id="downloadSample" 
+                       class="btn btn-sample">
+                        Download Excel Template
+                    </a>
+                </div>
+            </div>
+            <!-- UPLOAD SEATS -->
+            <div class="col-md-6">
+                <label class="form-label fw-medium">Upload Seat Details</label>{{permissions}}
+                <div class="d-flex gap-2">
+                    <input type="file" 
+                           class="form-control form-control-sm" 
+                           id="seatFile" 
+                           accept=".xlsx,.xls,.csv"
+                           required>
+                    <button class="btn btn-primary" id="uploadBtn"
+                     {% if 'create' not in permissions %}
+                            disabled
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="You do not have permission to create seats"
+                     {% endif %}
+                    >
+                        <span class="upload-text">Upload</span>
+                        <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                    </button>
+                </div>
+                <div class="form-text">Supported: .xlsx, .xls, .csv</div>
+                <div id="uploadProgress" class="mt-2"></div>
+            </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters & Search -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Search by name, email, seat no...">
+                        </div>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="filterNotPrinted">
+                            <label class="form-check-label" for="filterNotPrinted">
+                                Show only <strong>Not Printed</strong> records
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="seatTable">
+                        <thead>
+                            <tr>
+                                <th>Seat No</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Company</th>
+                                <th>Phone</th>
+                                <th>Gender</th>
+                                <th>Print Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="seatTableBody">
+                            {% for seat in seats %}
+                            <tr data-id="{{ seat.id }}">
+                                <td>{{ seat.seat_no }}</td>
+                                <td>{{ seat.name }}</td>
+                                <td>{{ seat.email }}</td>
+                                <td>{{ seat.company|default:''|default_if_none:'' }}</td>
+                                <td>{{ seat.phone|default:''|default_if_none:'' }}</td>
+                                <td>{{ seat.get_gender_display }}</td>
+                                <!-- <td class="status-cell">
+                                    {% if seat.print_status == 'printed' %}
+                                        <span class="badge bg-success">Printed</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Not Printed</span>
+                                    {% endif %}
+
+                                    {% if seat.logs %}
+                                        <i class="fas fa-file-lines log-icon ms-1" data-id="{{ seat.id }}"></i>
+                                    {% endif %}
+                                </td> -->
+
+                                <td class="status-cell">
+                                    {% if seat.print_status == 'printed' %}
+                                        <span class="badge bg-success">Printed</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Not Printed</span>
+                                    {% endif %}
+                                </td>
+                                
+                                    <td>
+                                        <div class="print-action-group d-flex gap-1">
+                                            <button class="btn btn-sm btn-outline-success print-btn"
+                                                    data-id="{{ seat.id }}" title="Print"
+                                                    
+                                                    {% if 'edit' not in permissions %}
+                                                        disabled
+                                                        data-bs-toggle="tooltip"
+                                                        data-bs-placement="top"
+                                                        title="You do not have permission to create seats"
+                                                    {% endif %}
+                                                    >
+                                                Print
+                                            </button>
+                                     
+                                            
+                                            <button class="btn btn-sm btn-outline-secondary reprint-btn"
+                                                    data-id="{{ seat.id }}" title="Reprint"
+                                                     {% if 'edit' not in permissions %}
+                                                        disabled
+                                                        data-bs-toggle="tooltip"
+                                                        data-bs-placement="top"
+                                                        title="You do not have permission to create seats"
+                                                    {% endif %}
+                                                    >
+                                                Reprint
+                                            </button>
+                                      
+                                            <button class="btn btn-sm btn-outline-primary edit-btn"
+                                                    data-id="{{ seat.id }}" title="Edit"
+                                                     {% if 'edit' not in permissions %}
+                                                        disabled
+                                                        data-bs-toggle="tooltip"
+                                                        data-bs-placement="top"
+                                                        title="You do not have permission to create seats"
+                                                    {% endif %}
+                                                    >
+                                                Edit
+                                            </button>
+   
+                                            <button class="btn btn-sm btn-outline-danger delete-btn"
+                                                    data-id="{{ seat.id }}" title="Delete"
+                                                     {% if 'delete' not in permissions %}
+                                                        disabled
+                                                        data-bs-toggle="tooltip"
+                                                        data-bs-placement="top"
+                                                        title="You do not have permission to create seats"
+                                                    {% endif %}
+                                                    >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="8" class="text-center text-muted">No records found</td></tr>
+                                 {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noDataMessage" class="no-data d-none">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <p>No seat records found.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Print Preview Modal -->
+<div class="modal fade" id="printPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Print Badge Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <!-- === EXACT BADGE FROM scan-print.html (NO QR) === -->
+                <div id="printArea" style="width: 350px; margin: 0 auto; font-family: Arial, sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <div style="background: #1a1a1a; color: #fff; padding: 15px 20px; border-radius: 12px 12px 0 0; text-align: left;">
+                        <div style="font-size: 14px; font-weight: bold;">EVENT X PRO</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Annual Conference 2025</div>
+                    </div>
+                    <div style="background: #fff; padding: 25px 20px; border: 2px solid #1a1a1a; border-top: none; border-radius: 0 0 12px 12px;">
+                        <div style="text-align: center;">
+                            <div id="previewSeatNo" style="font-size: 28px; font-weight: bold; color: #1a1a1a; margin-bottom: 8px;"></div>
+                            <div id="previewName" style="font-size: 22px; font-weight: 600; color: #1a1a1a; margin: 8px 0;"></div>
+                            <div id="previewCompany" style="font-size: 16px; color: #555; font-style: italic;"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- === END BADGE === -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmPrintBtn">
+                    <i class="fas fa-print me-1"></i> Print / Save as PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Seat Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <input type="hidden" id="editId">
+                        <div class="mb-3">
+                            <label class="form-label">Seat No</label>
+                            <input type="text" class="form-control" id="editSeatNo" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="editName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="editEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Company Name</label>
+                            <input type="text" class="form-control" id="editCompany">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Phone</label>
+                            <input type="text" class="form-control" id="editPhone">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Gender</label>
+                            <select class="form-select" id="editGender">
+                                <option value="">Prefer not to say</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                                <option value="prefer_not_to_say">Prefer not to say</option>
+                            </select>
+                        </div>
+                        <!-- <div class="mb-3">
+                            <label class="form-label">Print Status</label>
+                            <select class="form-select" id="editPrintStatus">
+                                <option value="printed">Printed</option>
+                                <option value="not_printed">Not Printed</option>
+                            </select>
+                        </div> -->
+                        <div class="mb-3">
+                            <label class="form-label">Print Status</label>
+                            <select class="form-select" id="editPrintStatus">
+                                <option value="not_printed">Not Printed</option>
+                                <option value="printed">Printed</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveEditBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+            <!-- Print Logs Modal -->
+            <div class="modal fade" id="logsModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Print Logs for <span id="logSeatNo"></span></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="logsList" class="list-group">
+                                <!-- Logs will appear here -->
+                            </div>
+                            <div id="noLogsMessage" class="text-center text-muted py-3 d-none">
+                                No print logs available.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>  
+                    </div>
+                </div>
+            </div>
+
+                <!-- Add Seat Modal -->
+            <div class="modal fade" id="addSeatModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Add New Seat</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="addSeatForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Seat No <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="addSeatNo" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="addName" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Email <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" id="addEmail" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Company Name</label>
+                                    <input type="text" class="form-control" id="addCompany">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Phone</label>
+                                    <input type="text" class="form-control" id="addPhone">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Gender</label>
+                                    <select class="form-select" id="addGender">
+                                        <option value="">Prefer not to say</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                        <option value="prefer_not_to_say">Prefer not to say</option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="saveAddBtn">Add Seat</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <form id="csrfForm" style="display:none;">{% csrf_token %}</form>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        
+    // ==== 1. DOM-only search + filter (replace renderTable) ====
+    const searchInput      = document.getElementById('searchInput');
+    const filterNotPrinted = document.getElementById('filterNotPrinted');
+    const tableBody        = document.getElementById('seatTableBody');
+    const noDataMessage    = document.getElementById('noDataMessage');
+
+    function filterTable() {
+        const term      = searchInput.value.toLowerCase().trim();
+        const onlyNotPrinted = filterNotPrinted.checked;
+        let visible = 0;
+
+        document.querySelectorAll('#seatTableBody tr[data-id]').forEach(row => {
+            const seatNo  = row.cells[0].textContent.toLowerCase();
+            const name    = row.cells[1].textContent.toLowerCase();
+            const email   = row.cells[2].textContent.toLowerCase();
+            const company = row.cells[3].textContent.toLowerCase();
+            const printed = row.cells[6].querySelector('.badge.bg-success') !== null;
+
+            const matchSearch = seatNo.includes(term) ||
+                                name.includes(term) ||
+                                email.includes(term) ||
+                                company.includes(term);
+            const matchFilter = onlyNotPrinted ? !printed : true;
+
+            if (matchSearch && matchFilter) {
+                row.style.display = '';
+                visible++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        noDataMessage.classList.toggle('d-none', visible > 0);
+    }
+
+    searchInput.addEventListener('input', filterTable);
+    filterNotPrinted.addEventListener('change', filterTable);
+    filterTable();   // initial run
+
+    // ==== 2. CSRF helper (keep if you already have it) ====
+    function getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+
+    // ==== 3. ALL AJAX HANDLERS (Add / Print / Reprint / Edit / Delete) ====
+    // ---- Add new seat -------------------------------------------------
+    document.getElementById('saveAddBtn')?.addEventListener('click', function () {
+        const payload = {
+            seat_no: document.getElementById('addSeatNo').value.trim(),
+            name   : document.getElementById('addName').value.trim(),
+            email  : document.getElementById('addEmail').value.trim(),
+            company: document.getElementById('addCompany').value.trim(),
+            phone  : document.getElementById('addPhone').value.trim(),
+            gender : document.getElementById('addGender').value,
+        };
+
+        if (!payload.seat_no || !payload.name || !payload.email) {
+            alert('Seat No, Name and Email are required.');
+            return;
+        }
+
+        fetch('{% url "seats:add_seat" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                // ---- prepend new row (same HTML Django would render) ----
+                const row = document.createElement('tr');
+                row.dataset.id = data.seat.id;
+                row.innerHTML = `
+                    <td>${data.seat.seat_no}</td>
+                    <td>${data.seat.name}</td>
+                    <td>${data.seat.email}</td>
+                    <td>${data.seat.company || '—'}</td>
+                    <td>${data.seat.phone || '—'}</td>
+                    <td>${data.seat.gender}</td>
+                    <td class="status-cell">
+                        <span class="badge bg-warning text-dark">Not Printed</span>
+                    </td>
+                    <td>
+                        <div class="print-action-group d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-success print-btn"   data-id="${data.seat.id}" title="Print">Print</button>
+                            <button class="btn btn-sm btn-outline-secondary reprint-btn" data-id="${data.seat.id}" title="Reprint">Reprint</button>
+                            <button class="btn btn-sm btn-outline-primary edit-btn"   data-id="${data.seat.id}" title="Edit">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger delete-btn"  data-id="${data.seat.id}" title="Delete">Delete</button>
+                        </div>
+                    </td>`;
+                tableBody.insertBefore(row, tableBody.firstChild);
+                attachButtonListeners(row);          // <-- re-attach for new row
+                filterTable();                       // refresh visibility
+                bootstrap.Modal.getInstance(document.getElementById('addSeatModal')).hide();
+                document.getElementById('addSeatForm').reset();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    });
+
+
+    // handle print
+
+ let currentPrintSeat = null;
+
+function handlePrint(e) {
+    const btn = e.target.closest('button');
+    const row = btn.closest('tr');
+    const id = row.dataset.id;
+
+    currentPrintSeat = {
+        id: id,
+        seat_no: row.cells[0].textContent.trim(),
+        name: row.cells[1].textContent.trim(),
+        company: row.cells[3].textContent.trim() === '—' ? '' : row.cells[3].textContent.trim()
+    };
+
+    // Fill preview
+    document.getElementById('previewSeatNo').textContent = currentPrintSeat.seat_no;
+    document.getElementById('previewName').textContent = currentPrintSeat.name;
+    document.getElementById('previewCompany').textContent = currentPrintSeat.company || '—';
+
+    // Show modal
+    new bootstrap.Modal(document.getElementById('printPreviewModal')).show();
+}
+
+// Reuse for Reprint
+function handleReprint(e) { handlePrint(e); }
+
+// Confirm Print
+document.getElementById('confirmPrintBtn').addEventListener('click', function () {
+    if (!currentPrintSeat) return;
+
+    const isReprint = document.activeElement?.classList.contains('reprint-btn');
+
+    // Update DB only on first print
+    if (!isReprint) {
+
+        fetch(`{% url 'seats:print_seat' 0 %}`.replace('0', currentPrintSeat.id), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                const row = document.querySelector(`tr[data-id="${currentPrintSeat.id}"]`);
+                const badge = row.querySelector('.badge');
+                badge.className = 'badge bg-success';
+                badge.textContent = 'Printed';
+                filterTable();
+            }
+        });
+    }
+
+    // Print
+    window.print();
+
+    // Close modal
+    bootstrap.Modal.getInstance(document.getElementById('printPreviewModal')).hide();
+    currentPrintSeat = null;
+});
+
+
+    // ---- Edit --------------------------------------------------------
+    function handleEdit(e) {
+    const row = e.target.closest('tr');
+    const id = row.dataset.id;
+
+    document.getElementById('editId').value = id;
+    document.getElementById('editSeatNo').value = row.cells[0].textContent.trim();
+    document.getElementById('editName').value = row.cells[1].textContent.trim();
+    document.getElementById('editEmail').value = row.cells[2].textContent.trim();
+
+    // Company & Phone: remove "—" if present
+    const company = row.cells[3].textContent.trim();
+    const phone = row.cells[4].textContent.trim();
+    document.getElementById('editCompany').value = company === '—' ? '' : company;
+    document.getElementById('editPhone').value = phone === '—' ? '' : phone;
+
+    // Gender: map display → value
+    const genderMap = {
+        'Male': 'male',
+        'Female': 'female',
+        'Other': 'other',
+        'Prefer not to say': 'prefer_not_to_say',
+        '': ''
+    };
+    const genderDisplay = row.cells[5].textContent.trim();
+    document.getElementById('editGender').value = genderMap[genderDisplay] || '';
+
+    // Print Status: map badge text → value
+    const printBadge = row.querySelector('.badge');
+    const printStatus = printBadge?.textContent.trim() === 'Printed' ? 'printed' : 'not_printed';
+    document.getElementById('editPrintStatus').value = printStatus;
+
+    new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+
+document.getElementById('saveEditBtn')?.addEventListener('click', function () {
+    const payload = {
+        id: document.getElementById('editId').value,
+        seat_no: document.getElementById('editSeatNo').value.trim(),
+        name: document.getElementById('editName').value.trim(),
+        email: document.getElementById('editEmail').value.trim(),
+        company: document.getElementById('editCompany').value.trim(),
+        phone: document.getElementById('editPhone').value.trim(),
+        gender: document.getElementById('editGender').value,
+        print_status: document.getElementById('editPrintStatus').value  // ADD THIS
+    };
+
+    fetch('{% url "seats:edit_seat" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            const row = document.querySelector(`tr[data-id="${d.seat.id}"]`);
+            row.cells[0].textContent = d.seat.seat_no;
+            row.cells[1].textContent = d.seat.name;
+            row.cells[2].textContent = d.seat.email;
+            row.cells[3].textContent = d.seat.company || '—';
+            row.cells[4].textContent = d.seat.phone || '—';
+            row.cells[5].textContent = d.seat.get_gender_display || d.seat.gender;
+
+            // Update Print Status Badge
+            const statusCell = row.cells[6];
+            const badge = statusCell.querySelector('.badge');
+            if (d.seat.print_status === 'printed') {
+                badge.className = 'badge bg-success';
+                badge.textContent = 'Printed';
+            } else {
+                badge.className = 'badge bg-warning text-dark';
+                badge.textContent = 'Not Printed';
+            }
+
+            filterTable();
+            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+        } else {
+            alert('Error: ' + (d.error || 'Unknown'));
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Network error');
+    });
+});
+
+    // ---- Delete -------------------------------------------------------
+    function handleDelete(e) {
+        if (!confirm('Delete this seat permanently?')) return;
+        const id = e.target.closest('button').dataset.id;
+
+        fetch('{% url "seats:delete_seat" %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+            body: JSON.stringify({ id })
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                e.target.closest('tr').remove();
+                filterTable();
+            } else alert(d.error);
+        });
+    }
+
+    // ---- Helper: attach listeners to a row (used for newly added rows) ----
+    function attachButtonListeners(row) {
+        row.querySelector('.print-btn')?.addEventListener('click', handlePrint);
+        row.querySelector('.reprint-btn')?.addEventListener('click', handleReprint);
+        row.querySelector('.edit-btn')?.addEventListener('click', handleEdit);
+        row.querySelector('.delete-btn')?.addEventListener('click', handleDelete);
+    }
+
+    // ---- Attach to **all** existing rows on page load -----------------
+    document.querySelectorAll('#seatTableBody tr[data-id]').forEach(attachButtonListeners);
+
+    // ---- (Optional) Excel download / upload placeholders ----------------
+    document.getElementById('downloadSample')?.addEventListener('click', e => {
+        e.preventDefault();
+        alert('Download sample Excel…');
+    });
+    // document.getElementById('uploadBtn')?.addEventListener('click', () => {
+    //     const file = document.getElementById('seatFile')?.files[0];
+    //     if (!file) return alert('Select a file first.');
+    //     alert(`Would upload: ${file.name}`);
+    // });
+
+
+// CSRF Token
+    function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content ||
+           document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+}
+
+    document.getElementById('uploadBtn')?.addEventListener('click', function () {
+    const fileInput = document.getElementById('seatFile');
+    const file = fileInput.files[0];
+    const progressDiv = document.getElementById('uploadProgress');
+    const uploadText = this.querySelector('.upload-text');
+    const spinner = this.querySelector('.spinner-border');
+
+    if (!file) {
+        alert('Please select a file.');
+        return;
+    }
+
+    const isLargeFile = file.size > 5 * 1024 * 1024;
+    const formData = new FormData();
+    formData.append('file', file);
+    if (isLargeFile) formData.append('isLargeFile', 'true');
+
+    // UI: Show loading
+    uploadText.classList.add('d-none');
+    spinner.classList.remove('d-none');
+    progressDiv.innerHTML = '<div class="text-primary">Uploading and processing...</div>';
+    this.disabled = true;
+
+    fetch('{% url "seats:bulk_upload_seats" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: formData
+    })
+    .then(response => {
+        // CRITICAL: Check if HTTP status is OK
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();  // Only parse if OK
+    })
+    .then(data => {
+        // SUCCESS PATH
+        uploadText.classList.remove('d-none');
+        spinner.classList.add('d-none');
+        this.disabled = false;
+        fileInput.value = '';
+
+        if (data.success) {
+            const msg = `Success: ${data.added} added, ${data.updated} updated, ${data.failed} failed.`;
+            progressDiv.innerHTML = `<div class="text-success">${msg}</div>`;
+
+            if (data.errors?.length > 0) {
+                const list = data.errors.map(e => `<li>Row ${e.row}: ${e.error}</li>`).join('');
+                progressDiv.innerHTML += `
+                    <details class="mt-2">
+                        <summary class="text-danger">View ${data.errors.length} errors</summary>
+                        <ul class="text-danger small">${list}</ul>
+                    </details>`;
+            }
+
+            // Optional: Auto-refresh table
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            progressDiv.innerHTML = `<div class="text-danger">Error: ${data.error || 'Unknown error'}</div>`;
+        }
+    })
+    .catch(error => {
+        // ONLY network or parsing errors
+        console.error('Upload error:', error);
+        progressDiv.innerHTML = `<div class="text-danger">Network error: ${error.message}</div>`;
+        uploadText.classList.remove('d-none');
+        spinner.classList.add('d-none');
+        this.disabled = false;
+    });
+});
+
+    // ---- Re-attach button listeners after reload (if using AJAX refresh) ----
+    function attachButtonListeners(row) {
+        row.querySelector('.print-btn')?.addEventListener('click', handlePrint);
+        row.querySelector('.reprint-btn')?.addEventListener('click', handleReprint);
+        row.querySelector('.edit-btn')?.addEventListener('click', handleEdit);
+        row.querySelector('.delete-btn')?.addEventListener('click', handleDelete);
+    }
+
+    // Attach to existing rows
+    document.querySelectorAll('#seatTableBody tr[data-id]').forEach(attachButtonListeners);
+
+
+    /* ==============================================================
+    FILTER MAIN TABLE ON SEARCH (in addition to dropdown)
+    ============================================================== */
+    const seatTableBody = document.getElementById("seatTableBody");
+
+    input.addEventListener("input", function () {
+        const q = this.value.trim();
+
+        // --- 1. Update dropdown (existing) ---
+        clearTimeout(timeout);
+        if (q.length < 2) {
+            results.style.display = "none";
+            // Reset table to full view
+            loadTableRows("");
+            return;
+        }
+
+        timeout = setTimeout(() => {
+            // --- 2. Search dropdown (existing) ---
+            doSearch(q);
+
+            // --- 3. Filter main table ---
+            loadTableRows(q);
+        }, 300);
+    });
+
+    // ------------------------------------------------------------------
+    // Load table rows via AJAX
+    // ------------------------------------------------------------------
+    // function loadTableRows(query) {
+    //     const url = "{ % url 'seats:filter_seats_table' %}" + (query ? `?q=${encodeURIComponent(query)}` : "");
+    //     fetch(url, {
+    //         headers: { "X-Requested-With": "XMLHttpRequest" }
+    //     })
+    //     .then(r => r.text())
+    //     .then(html => {
+    //         seatTableBody.innerHTML = html;
+    //     })
+    //     .catch(() => {
+    //         seatTableBody.innerHTML = `<tr><td colspan="8" class="text-danger text-center">Error loading seats.</td></tr>`;
+    //     });
+    // }
+
+    // // Clear button (if you add one) or when input is empty
+    // if (q === "") {
+    //     loadTableRows("");
+    // }
+
+    
+</script>
+</body>
+</html>

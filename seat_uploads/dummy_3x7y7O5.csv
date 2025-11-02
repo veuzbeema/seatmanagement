@@ -1,0 +1,11 @@
+seat_no,name,email,company,phone,gender
+SEAT-101,John Doe,john@example.com,TechCorp,+1234567890,male
+SEAT-102,Jane Smith,jane@example.com,DesignHub,+0987654321,female
+SEAT-103,Michael Brown,michael@startup.io,InnovateX,+442079460958,male
+SEAT-104,Anna Lee,anna@global.com,Global Solutions,+81312345678,female
+SEAT-105,Raj Patel,raj@fintech.co,FinTech Pro,+919876543210,male
+SEAT-106,Lisa Wong,lisa@agency.com,Creative Agency,+85212345678,female
+SEAT-107,Carlos Rivera,carlos@logistics.net,FastLogistics,+34911234567,male
+SEAT-108,Emma Wilson,emma@health.org,HealthPlus,+447700900123,female
+SEAT-109,Ahmed Khan,ahmed@edu.in,EduWorld,+918800112233,male
+SEAT-110,Sofia Martinez,sofia@travel.es,TravelEasy,+34600112233,female
