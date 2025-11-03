@@ -1,3 +1,4 @@
+import re
 from django.shortcuts import render
 from .models import User
 from django.http import JsonResponse
@@ -5,6 +6,8 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import update_session_auth_hash
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from .models import User, UserPermission
 import json
 
@@ -120,11 +123,58 @@ def list_users(request):
     })
 
 
+# Validation helper functions
+def validate_name(name):
+    if not name or not name.strip():
+        return "Name is required."
+    if len(name) > 100:
+        return "Name cannot exceed 100 characters."
+    if not re.match(r'^[a-zA-Z\s]+$', name):
+        return "Name can only contain letters and spaces."
+    return None
+
+def validate_email_format(email):
+    if not email or not email.strip():
+        return "Email is required."
+    try:
+        validate_email(email)
+    except ValidationError:
+        return "Invalid email format."
+    return None
+
+def validate_password(password):
+    if not password:
+        return "Password is required."
+    if len(password) < 8:
+        return "Password must be at least 8 characters long."
+    if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$', password):
+        return "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character."
+    return None
+
+
 @csrf_exempt
 @login_required
 @require_http_methods(["POST"])
 def create_user(request):
     data = json.loads(request.body)
+
+    name_error = validate_name(data.get('name'))
+    if name_error:
+            return JsonResponse({'success': False, 'error': name_error}, status=400)
+    
+    email_error = validate_email_format(data.get('email'))
+    if email_error:
+            return JsonResponse({'success': False, 'error': email_error}, status=400)
+    if User.objects.filter(email=data['email']).exists():
+            return JsonResponse({'success': False, 'error': 'Email already exists'}, status=400)
+    
+    password_error = validate_password(data.get('password'))
+    if password_error:
+            return JsonResponse({'success': False, 'error': password_error}, status=400)
+    
+    if not data.get('role'):
+            return JsonResponse({'success': False, 'error': 'Role is required'}, status=400)
+    
     try:
         user = User.objects.create_user(
             email=data['email'],
@@ -152,6 +202,36 @@ def update_user(request, user_id):
     try:
         user = User.objects.get(id=user_id)
         data = json.loads(request.body)
+
+        if 'name' in data:
+            name_error = validate_name(data['name'])
+            if name_error:
+                return JsonResponse({'success': False, 'error': name_error}, status=400)
+            user.first_name = data['name']  # Adjust if name is stored differently
+
+        # Validate email
+        if 'email' in data:
+            email_error = validate_email_format(data['email'])
+            if email_error:
+                return JsonResponse({'success': False, 'error': email_error}, status=400)
+            if data['email'] != user.email and User.objects.filter(email=data['email']).exists():
+                return JsonResponse({'success': False, 'error': 'Email already exists'}, status=400)
+            user.email = data['email']
+            user.username = data['email']  # Adjust if username is handled differently
+
+        # Validate password (only if provided)
+        if data.get('password'):
+            password_error = validate_password(data['password'])
+            if password_error:
+                return JsonResponse({'success': False, 'error': password_error}, status=400)
+            user.set_password(data['password'])
+
+        # Validate role
+        if 'role' in data:
+            if not data['role']:
+                return JsonResponse({'success': False, 'error': 'Role is required'}, status=400)
+            user.user_type = data['role']
+
         user.user_type = data['role']
         user.status = data.get('status', user.status)
         if data.get('password'):
